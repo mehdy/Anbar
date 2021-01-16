@@ -1,3 +1,4 @@
+use hyper::body::{to_bytes, Bytes};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::convert::Infallible;
@@ -7,6 +8,7 @@ use std::net::SocketAddr;
 mod storage {
     use std::fs::File;
     use std::io::Error;
+    use std::io::Write;
     use std::path::Path;
 
     #[derive(Copy, Clone)]
@@ -19,6 +21,10 @@ mod storage {
         pub fn get(self, filename: &str) -> Result<File, Error> {
             let path = Path::new(filename);
             File::open(path)
+        }
+        pub fn put(self, filename: &str, buf: &[u8]) {
+            let mut file = File::create(filename).unwrap();
+            file.write_all(buf).unwrap();
         }
     }
 }
@@ -42,6 +48,17 @@ impl HTTPServer {
                 let mut x = String::new();
                 f.read_to_string(&mut x).unwrap();
                 Ok(Response::new(x.into()))
+            }
+            &Method::PUT => {
+                let (parts, body) = req.into_parts();
+                let filename = parts.uri.path();
+                let file = to_bytes(body).await.unwrap();
+                let buf: &[u8] = &Bytes::from(file);
+                self.storage.put(filename, buf);
+                Ok(Response::builder()
+                    .status(StatusCode::CREATED)
+                    .body("".into())
+                    .unwrap())
             }
             _ => Ok(Response::builder()
                 .status(StatusCode::METHOD_NOT_ALLOWED)
