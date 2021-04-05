@@ -1,22 +1,29 @@
+use chrono::{DateTime, Local};
+
 use crate::adapters::user::OwnerResult;
 use crate::entities::bucket::Bucket;
 
 #[derive(Debug)]
 pub struct BucketResult {
     name: String,
+    creation_date: DateTime<Local>,
 }
 
 impl From<&Bucket> for BucketResult {
     fn from(bucket: &Bucket) -> BucketResult {
         Self {
             name: bucket.name.to_string(),
+            creation_date: bucket.creation_date,
         }
     }
 }
 
 impl BucketResult {
     pub fn to_xml(&self) -> String {
-        format!("<Bucket><Name>{}</Name></Bucket>", self.name)
+        format!(
+            "<Bucket><Name>{}</Name><CreationDate>{:?}</CreationDate></Bucket>",
+            self.name, self.creation_date
+        )
     }
 }
 

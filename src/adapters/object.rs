@@ -1,3 +1,5 @@
+use chrono::{DateTime, Local};
+
 use crate::adapters::user::OwnerResult;
 use crate::entities::object::Object;
 
@@ -7,6 +9,7 @@ pub struct ObjectResult {
     key: String,
     owner: OwnerResult,
     size: i64,
+    last_modified: DateTime<Local>,
 }
 
 impl From<&Object> for ObjectResult {
@@ -19,6 +22,7 @@ impl From<&Object> for ObjectResult {
                 display_name: "".to_string(),
             },
             size: object.size,
+            last_modified: object.last_modified,
         }
     }
 }
@@ -26,11 +30,12 @@ impl From<&Object> for ObjectResult {
 impl ObjectResult {
     pub fn to_xml(&self) -> String {
         format!(
-            "<Contents><ETag>{}</ETag><Key>{}</Key>{}<Size>{}</Size></Contents>",
+            "<Contents><ETag>{}</ETag><Key>{}</Key>{}<Size>{}</Size><LastModified>{:?}</LastModified></Contents>",
             self.etag,
             self.key,
             self.owner.to_xml(),
-            self.size
+            self.size,
+            self.last_modified,
         )
     }
 }

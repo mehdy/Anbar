@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
+use chrono::Local;
+
 use crate::entities::bucket::Bucket;
 use crate::entities::object::Object;
 use crate::entities::user::User;
@@ -59,6 +61,7 @@ impl Storage {
             owner_id: owner_id.to_string(),
             object_count: 0,
             size: 0,
+            creation_date: Local::now(),
         });
     }
 
@@ -94,14 +97,20 @@ impl Storage {
             bucket: bucket.to_string(),
             owner_id: user.id.to_string(),
             size: body.len() as i64,
+            last_modified: Local::now(),
         })
     }
 
-    pub fn get_object(&self, bucket: &str, object: &str, buf: &mut Vec<u8>) {
+    pub fn get_object(&self, bucket: &str, object: &str, buf: &mut Vec<u8>) -> &Object {
         let path = Path::new(&self.base_path).join(bucket).join(object);
 
         let mut file = File::open(path).unwrap();
 
         file.read_to_end(buf).unwrap();
+
+        self.objects
+            .iter()
+            .find(|&o| o.bucket == bucket && o.name == object)
+            .unwrap()
     }
 }

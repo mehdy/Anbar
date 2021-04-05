@@ -1,3 +1,4 @@
+use chrono::Utc;
 use futures::TryStreamExt;
 use hmac::Mac;
 use hyper::{Body, Method, Request, Response, StatusCode};
@@ -91,11 +92,17 @@ impl App {
             }
             Operation::GetObject(bucket, object) => {
                 let mut buf = vec![];
-                storage.get_object(&bucket, &object, &mut buf);
+                let obj = storage.get_object(&bucket, &object, &mut buf);
 
                 Response::builder()
                     .status(StatusCode::OK)
-                    .header("Last-Modified", "Wed, 12 Oct 2009 17:50:00 GMT") // TODO: use legit value instead
+                    .header(
+                        "Last-Modified",
+                        obj.last_modified
+                            .with_timezone(&Utc)
+                            .format("%a, %d %b %Y %H:%M:%S GMT")
+                            .to_string(),
+                    )
                     .body(Body::from(buf))
                     .unwrap()
             }
