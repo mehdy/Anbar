@@ -16,7 +16,7 @@ impl From<&Object> for ObjectResult {
     fn from(object: &Object) -> Self {
         Self {
             etag: "".to_string(),
-            key: object.name.to_string(),
+            key: object.key.to_string(),
             owner: OwnerResult {
                 id: object.owner_id.to_string(),
                 display_name: "".to_string(),

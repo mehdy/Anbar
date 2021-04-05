@@ -75,7 +75,7 @@ impl App {
                     .to_xml(),
                 ))
                 .unwrap(),
-            Operation::PutObject(bucket, object) => {
+            Operation::PutObject(bucket, key) => {
                 let entire_body = req
                     .into_body()
                     .try_fold(Vec::new(), |mut data, chunk| async move {
@@ -84,21 +84,22 @@ impl App {
                     })
                     .await
                     .unwrap();
-                storage.put_object(&user, &bucket, &object, &entire_body);
+                storage.put_object(&user, &bucket, &key, &entire_body);
                 Response::builder()
                     .status(StatusCode::OK)
                     .body(Body::empty())
                     .unwrap()
             }
-            Operation::GetObject(bucket, object) => {
+            Operation::GetObject(bucket, key) => {
                 let mut buf = vec![];
-                let obj = storage.get_object(&bucket, &object, &mut buf);
+                let object = storage.get_object(&bucket, &key, &mut buf);
 
                 Response::builder()
                     .status(StatusCode::OK)
                     .header(
                         "Last-Modified",
-                        obj.last_modified
+                        object
+                            .last_modified
                             .with_timezone(&Utc)
                             .format("%a, %d %b %Y %H:%M:%S GMT")
                             .to_string(),
@@ -120,14 +121,14 @@ impl App {
             .splitn(2, '/')
             .filter(|&c| c != "");
         let bucket = iter.next();
-        let object = iter.next();
+        let key = iter.next();
 
-        match (req.method(), bucket, object) {
-            (&Method::GET, Some(bucket), Some(object)) => {
-                Operation::GetObject(bucket.to_string(), object.to_string())
+        match (req.method(), bucket, key) {
+            (&Method::GET, Some(bucket), Some(key)) => {
+                Operation::GetObject(bucket.to_string(), key.to_string())
             }
-            (&Method::PUT, Some(bucket), Some(object)) => {
-                Operation::PutObject(bucket.to_string(), object.to_string())
+            (&Method::PUT, Some(bucket), Some(key)) => {
+                Operation::PutObject(bucket.to_string(), key.to_string())
             }
             (&Method::PUT, Some(bucket), None) => Operation::CreateBucket(bucket.to_string()),
             (&Method::GET, Some(bucket), None) => Operation::ListObjects(bucket.to_string()),

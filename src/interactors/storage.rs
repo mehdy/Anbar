@@ -93,7 +93,7 @@ impl Storage {
         file.sync_all().unwrap();
 
         self.objects.push(Object {
-            name: object.to_string(),
+            key: object.to_string(),
             bucket: bucket.to_string(),
             owner_id: user.id.to_string(),
             size: body.len() as i64,
@@ -110,7 +110,7 @@ impl Storage {
 
         self.objects
             .iter()
-            .find(|&o| o.bucket == bucket && o.name == object)
+            .find(|&o| o.bucket == bucket && o.key == object)
             .unwrap()
     }
 }
