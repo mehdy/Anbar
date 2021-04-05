@@ -35,32 +35,45 @@ impl App {
         }
 
         let result = match self.detect_operation(&req) {
-            Operation::ListBuckets => ListAllMyBucketsResult {
-                buckets: storage
-                    .list_buckets(&user.id)
-                    .iter()
-                    .map(|&b| b.into())
-                    .collect(),
-                owner: OwnerResult {
-                    display_name: user.display_name.to_string(),
-                    id: user.id.to_string(),
-                },
-            }
-            .to_xml(),
+            Operation::ListBuckets => Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(
+                    ListAllMyBucketsResult {
+                        buckets: storage
+                            .list_buckets(&user.id)
+                            .iter()
+                            .map(|&b| b.into())
+                            .collect(),
+                        owner: OwnerResult {
+                            display_name: user.display_name.to_string(),
+                            id: user.id.to_string(),
+                        },
+                    }
+                    .to_xml(),
+                ))
+                .unwrap(),
             Operation::CreateBucket(bucket) => {
                 storage.create_bucket(&user.id, &bucket);
-                "".to_string()
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::empty())
+                    .unwrap()
             }
-            Operation::ListObjects(bucket) => ListBucketResult {
-                is_truncated: false,
-                contents: storage
-                    .list_objects(&bucket)
-                    .iter()
-                    .map(|&o| o.into())
-                    .collect(),
-                name: bucket,
-            }
-            .to_xml(),
+            Operation::ListObjects(bucket) => Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(
+                    ListBucketResult {
+                        is_truncated: false,
+                        contents: storage
+                            .list_objects(&bucket)
+                            .iter()
+                            .map(|&o| o.into())
+                            .collect(),
+                        name: bucket,
+                    }
+                    .to_xml(),
+                ))
+                .unwrap(),
             Operation::PutObject(bucket, object) => {
                 let entire_body = req
                     .into_body()
@@ -71,21 +84,24 @@ impl App {
                     .await
                     .unwrap();
                 storage.put_object(&user, &bucket, &object, &entire_body);
-                "".to_string()
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::empty())
+                    .unwrap()
             }
             Operation::GetObject(bucket, object) => {
                 let mut buf = vec![];
                 storage.get_object(&bucket, &object, &mut buf);
 
-                String::from_utf8(buf).unwrap()
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header("Last-Modified", "Wed, 12 Oct 2009 17:50:00 GMT") // TODO: use legit value instead
+                    .body(Body::from(buf))
+                    .unwrap()
             }
         };
 
-        Ok(Response::builder()
-            .status(StatusCode::OK)
-            .header("Last-Modified", "Wed, 12 Oct 2009 17:50:00 GMT") // TODO: use legit value instead
-            .body(Body::from(result))
-            .unwrap())
+        Ok(result)
     }
 
     fn detect_operation(&self, req: &Request<Body>) -> Operation {
