@@ -2,9 +2,6 @@ use hmac::{Hmac, Mac, NewMac};
 use hyper::{Body, Request};
 use regex::Regex;
 use sha2::{Digest, Sha256};
-// use std::fs;
-// use std::io::prelude::*;
-// use std::path::Path;
 
 pub type HmacSha256 = Hmac<Sha256>;
 
