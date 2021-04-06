@@ -21,6 +21,7 @@ pub enum Operation {
     DeleteBucket(String),
     GetObject(String, String),
     PutObject(String, String),
+    DeleteObject(String, String),
 }
 
 impl Auth {

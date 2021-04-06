@@ -120,4 +120,12 @@ impl Storage {
 
         self.buckets.retain(|b| b.name == bucket);
     }
+
+    pub fn delete_object(&mut self, bucket: &str, object: &str) {
+        let path = Path::new(&self.base_path).join(bucket).join(object);
+        fs::remove_file(path).unwrap();
+
+        self.objects
+            .retain(|o| o.bucket == bucket && o.key == object);
+    }
 }

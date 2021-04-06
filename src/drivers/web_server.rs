@@ -115,6 +115,14 @@ impl App {
                     .body(Body::from(buf))
                     .unwrap()
             }
+            Operation::DeleteObject(bucket, key) => {
+                storage.delete_object(&bucket, &key);
+
+                Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap()
+            }
         };
 
         Ok(result)
@@ -137,6 +145,9 @@ impl App {
             }
             (&Method::PUT, Some(bucket), Some(key)) => {
                 Operation::PutObject(bucket.to_string(), key.to_string())
+            }
+            (&Method::DELETE, Some(bucket), Some(key)) => {
+                Operation::DeleteObject(bucket.to_string(), key.to_string())
             }
             (&Method::PUT, Some(bucket), None) => Operation::CreateBucket(bucket.to_string()),
             (&Method::GET, Some(bucket), None) => Operation::ListObjects(bucket.to_string()),
