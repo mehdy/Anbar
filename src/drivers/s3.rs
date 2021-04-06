@@ -18,6 +18,7 @@ pub enum Operation {
     ListBuckets,
     ListObjects(String),
     CreateBucket(String),
+    DeleteBucket(String),
     GetObject(String, String),
     PutObject(String, String),
 }

@@ -113,4 +113,11 @@ impl Storage {
             .find(|&o| o.bucket == bucket && o.key == object)
             .unwrap()
     }
+
+    pub fn delete_bucket(&mut self, bucket: &str) {
+        let path = Path::new(&self.base_path).join(bucket);
+        fs::remove_dir_all(path).unwrap();
+
+        self.buckets.retain(|b| b.name == bucket);
+    }
 }

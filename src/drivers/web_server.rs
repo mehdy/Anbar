@@ -60,6 +60,14 @@ impl App {
                     .body(Body::empty())
                     .unwrap()
             }
+            Operation::DeleteBucket(bucket) => {
+                storage.delete_bucket(&bucket);
+
+                Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap()
+            }
             Operation::ListObjects(bucket) => Response::builder()
                 .status(StatusCode::OK)
                 .body(Body::from(
@@ -132,6 +140,7 @@ impl App {
             }
             (&Method::PUT, Some(bucket), None) => Operation::CreateBucket(bucket.to_string()),
             (&Method::GET, Some(bucket), None) => Operation::ListObjects(bucket.to_string()),
+            (&Method::DELETE, Some(bucket), None) => Operation::DeleteBucket(bucket.to_string()),
             (_, _, _) => Operation::ListBuckets,
         }
     }
