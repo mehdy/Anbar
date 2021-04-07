@@ -1,10 +1,12 @@
+use std::clone::Clone;
+use std::convert::Infallible;
+use std::sync::Arc;
+
 use chrono::Utc;
 use futures::TryStreamExt;
 use hmac::Mac;
 use hyper::{Body, Method, Request, Response, StatusCode};
-use std::clone::Clone;
-use std::convert::Infallible;
-use std::sync::Arc;
+use md5::{Digest, Md5};
 use tokio::sync::Mutex;
 
 use crate::adapters::bucket::ListAllMyBucketsResult;
@@ -92,9 +94,15 @@ impl App {
                     })
                     .await
                     .unwrap();
+
+                let mut hasher = Md5::new();
+                hasher.update(&entire_body);
+                let content_md5 = format!("{:x}", hasher.finalize());
+
                 storage.put_object(&user, &bucket, &key, &entire_body);
                 Response::builder()
                     .status(StatusCode::OK)
+                    .header("ETag", content_md5)
                     .body(Body::empty())
                     .unwrap()
             }
