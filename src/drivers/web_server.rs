@@ -45,7 +45,7 @@ impl App {
                         buckets: storage
                             .list_buckets(&user.id)
                             .iter()
-                            .map(|&b| b.into())
+                            .map(|b| b.into())
                             .collect(),
                         owner: OwnerResult {
                             display_name: user.display_name.to_string(),
@@ -78,7 +78,7 @@ impl App {
                         contents: storage
                             .list_objects(&bucket)
                             .iter()
-                            .map(|&o| o.into())
+                            .map(|o| o.into())
                             .collect(),
                         name: bucket,
                     }

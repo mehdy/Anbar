@@ -6,6 +6,7 @@ use std::path::Path;
 
 use chrono::Local;
 
+use crate::drivers::db::Db;
 use crate::entities::bucket::Bucket;
 use crate::entities::object::Object;
 use crate::entities::user::User;
@@ -13,18 +14,14 @@ use crate::entities::user::User;
 #[derive(Clone)]
 pub struct Storage {
     base_path: String,
-    buckets: Vec<Bucket>,
-    objects: Vec<Object>,
-    users: Vec<User>,
+    db: Db,
 }
 
 impl Storage {
     pub fn new(base_path: &str) -> Self {
         Self {
             base_path: base_path.to_string(),
-            buckets: vec![],
-            objects: vec![],
-            users: vec![],
+            db: Db::new(&format!("{}/.anbar.db", base_path)),
         }
     }
 
@@ -42,11 +39,11 @@ impl Storage {
             secret_access_key: secret_access_key.to_string(),
         };
 
-        self.users.push(user);
+        self.db.create_user(&user);
     }
 
-    pub fn find_user(&self, id: &str) -> Option<&User> {
-        self.users.iter().find(|&u| u.access_key == id)
+    pub fn find_user(&self, id: &str) -> Option<User> {
+        self.db.get_user_by_access_key(id)
     }
 
     pub fn create_bucket(&mut self, owner_id: &str, name: &str) {
@@ -56,28 +53,23 @@ impl Storage {
             fs::create_dir(path).unwrap();
         }
 
-        self.buckets.push(Bucket {
+        let bucket = Bucket {
             name: name.to_string(),
             owner_id: owner_id.to_string(),
             object_count: 0,
             size: 0,
             creation_date: Local::now(),
-        });
+        };
+
+        self.db.create_bucket(&bucket);
     }
 
-    pub fn list_buckets(&self, owner_id: &str) -> Vec<&Bucket> {
-        let user = self.users.iter().find(|&u| u.id == owner_id).unwrap();
-        self.buckets
-            .iter()
-            .filter(|&b| b.owner_id == user.id)
-            .collect()
+    pub fn list_buckets(&self, owner_id: &str) -> Vec<Bucket> {
+        self.db.get_buckets_by_user_id(owner_id)
     }
 
-    pub fn list_objects(&self, bucket: &str) -> Vec<&Object> {
-        self.objects
-            .iter()
-            .filter(|&o| o.bucket == bucket)
-            .collect()
+    pub fn list_objects(&self, bucket: &str) -> Vec<Object> {
+        self.db.get_objects_by_bucket_name(bucket)
     }
 
     pub fn put_object(&mut self, user: &User, bucket: &str, object: &str, body: &[u8]) {
@@ -92,40 +84,38 @@ impl Storage {
         file.write_all(body).unwrap();
         file.sync_all().unwrap();
 
-        self.objects.push(Object {
+        let obj = Object {
             key: object.to_string(),
             bucket: bucket.to_string(),
             owner_id: user.id.to_string(),
             size: body.len() as i64,
             last_modified: Local::now(),
-        })
+        };
+
+        self.db.create_object(&obj);
     }
 
-    pub fn get_object(&self, bucket: &str, object: &str, buf: &mut Vec<u8>) -> &Object {
+    pub fn get_object(&self, bucket: &str, object: &str, buf: &mut Vec<u8>) -> Object {
         let path = Path::new(&self.base_path).join(bucket).join(object);
 
         let mut file = File::open(path).unwrap();
 
         file.read_to_end(buf).unwrap();
 
-        self.objects
-            .iter()
-            .find(|&o| o.bucket == bucket && o.key == object)
-            .unwrap()
+        self.db.get_object(bucket, object).unwrap()
     }
 
     pub fn delete_bucket(&mut self, bucket: &str) {
         let path = Path::new(&self.base_path).join(bucket);
         fs::remove_dir_all(path).unwrap();
 
-        self.buckets.retain(|b| b.name == bucket);
+        self.db.delete_bucket(bucket);
     }
 
     pub fn delete_object(&mut self, bucket: &str, object: &str) {
         let path = Path::new(&self.base_path).join(bucket).join(object);
         fs::remove_file(path).unwrap();
 
-        self.objects
-            .retain(|o| o.bucket == bucket && o.key == object);
+        self.db.delete_object(bucket, object);
     }
 }

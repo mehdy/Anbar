@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Object {
     pub key: String,
     pub bucket: String,
