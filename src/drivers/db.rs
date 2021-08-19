@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::entities::bucket::Bucket;
 use crate::entities::object::Object;
 use crate::entities::user::User;
@@ -35,6 +37,10 @@ impl Db {
     }
 
     pub fn create_user(&self, user: &User) {
+        if self.user_id_to_user.get(&user.id).unwrap().is_some() {
+            panic!("user already exists!");
+        }
+
         self.user_id_to_user
             .insert(&user.id, serde_json::to_vec(&user).unwrap())
             .unwrap();
@@ -47,6 +53,15 @@ impl Db {
     }
 
     pub fn create_bucket(&self, bucket: &Bucket) {
+        if self
+            .bucket_name_to_bucket
+            .get(&bucket.name)
+            .unwrap()
+            .is_some()
+        {
+            panic!("bucket already exists!")
+        }
+
         self.bucket_name_to_bucket
             .insert(&bucket.name, serde_json::to_vec(bucket).unwrap())
             .unwrap();
@@ -62,23 +77,23 @@ impl Db {
             .unwrap();
     }
 
-    pub fn get_buckets_by_user_id(&self, user_id: &str) -> Vec<Bucket> {
+    pub fn get_buckets_by_user_id(&self, user_id: &str) -> HashSet<Bucket> {
         let user_buckets_buf = self.user_id_to_bucket.get(user_id).unwrap().unwrap();
         serde_json::from_slice(&user_buckets_buf).unwrap()
     }
 
-    pub fn get_objects_by_bucket_name(&self, bucket_name: &str) -> Vec<Object> {
+    pub fn get_objects_by_bucket_name(&self, bucket_name: &str) -> HashSet<Object> {
         let objects_buf = self
             .bucket_name_to_objects
             .get(bucket_name)
             .unwrap()
-            .unwrap();
+            .unwrap_or(sled::IVec::from("[]"));
         serde_json::from_slice(&objects_buf).unwrap()
     }
 
     pub fn create_object(&self, object: &Object) {
         let mut objects = self.get_objects_by_bucket_name(&object.bucket);
-        objects.push(object.to_owned());
+        objects.insert(object.to_owned());
 
         self.bucket_name_to_objects
             .insert(&object.bucket, serde_json::to_vec(&objects).unwrap())

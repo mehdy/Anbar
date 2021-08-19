@@ -1,4 +1,5 @@
 use std::clone::Clone;
+use std::collections::HashSet;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -64,11 +65,11 @@ impl Storage {
         self.db.create_bucket(&bucket);
     }
 
-    pub fn list_buckets(&self, owner_id: &str) -> Vec<Bucket> {
+    pub fn list_buckets(&self, owner_id: &str) -> HashSet<Bucket> {
         self.db.get_buckets_by_user_id(owner_id)
     }
 
-    pub fn list_objects(&self, bucket: &str) -> Vec<Object> {
+    pub fn list_objects(&self, bucket: &str) -> HashSet<Object> {
         self.db.get_objects_by_bucket_name(bucket)
     }
 
